@@ -171,6 +171,7 @@ class Room:
         print("\033c")
         print(f"Room {self.id}")
         print(f"Items {len(self.items)}")
+        print(f"Remain items {len(self.items) - len([item for item in player.items if item in self.items])}")
         i = 0
         for row in self.tiles:
             j = 0
