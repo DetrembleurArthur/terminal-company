@@ -13,15 +13,20 @@ class Tile:
     INTERNAL_WALL = 3
     ITEM = 5
 
+    FOG = ["░", "▒", "▓"]
+
 
     def __init__(self, id=0) -> None:
         self.id = id
         self.char = " "
         self.player_on = False
         self.resource = None
+        self.visible = True
     
     def __repr__(self) -> str:
-        return self.char if not self.player_on else "×"
+        if self.visible:
+            return self.char if not self.player_on else "×"
+        return Tile.FOG[randint(0, 2)]
 
 class Room:
 
@@ -159,7 +164,7 @@ class Room:
         else: player_position.y = pos.y
         self.tiles[player_position.y][player_position.x].player_on = True
     
-    def show(self):
+    def show(self, player_pos=None, player=None):
         term_dim = terminal_dimensions()
         x = term_dim.width // 2 - self.dimensions.width # car une case prend 2 caractères (la case + le vide)
         y = term_dim.height // 2 - self.dimensions.height // 2
@@ -171,6 +176,9 @@ class Room:
             j = 0
             print(f"\033[{i + y};{x-3}H{i}", end="")
             for col in row:
+                if player_pos != None:
+                    d = sqrt((player_pos.x - j//2)**2 + (player_pos.y - i)**2)
+                    col.visible = d < player.render_distance
                 print(f"\033[{i + y};{j + x}H{col}", end="")
                 j += 2
             i += 1
@@ -210,12 +218,13 @@ class Dungeon:
         last_command = ""
         last_direction = "none"
         while self.running:
-            self.current_room.show()
+            self.current_room.show(self.player_position, self.player)
             print(f"last direction {last_direction}")
             print(f"Total items {len(self.items)}")
             print(f"Remain items {len(self.items) - len([item for item in self.player.items if item in self.items])}")
             if wait_ticks < 0:
                 command = input(f"\033[H(turn.{ticks})> ")
+                if len(command) == 0 and last_command in movements.keys(): command = last_command
                 if command in movements.keys():
                     last_direction = command
                     new_player_position = self.player_position.translate(movements[command])
@@ -253,7 +262,8 @@ class Dungeon:
                     print("\033c")
                     self.player.show()
                     input("(enter)> ")
-                last_command = command
+                if len(command) != 0:
+                    last_command = command
             elif wait_ticks > 0:
                 print(f"\033[H(turn.{ticks})> [wait {wait_ticks}]")
                 time.sleep(0.75)

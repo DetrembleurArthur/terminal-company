@@ -154,6 +154,7 @@ class Player:
 
     def __init__(self) -> None:
         self.items = []
+        self.render_distance = 2
     
     def show(self):
         print("\nItems:")
