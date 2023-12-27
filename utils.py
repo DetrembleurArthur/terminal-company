@@ -1,6 +1,11 @@
 from datetime import datetime
 from os import get_terminal_size
 
+import math
+
+def sigmoid(x):
+  return 1 / (1 + math.exp(-x))
+
 DEBUG = True
 
 def debug(text):
