@@ -2,6 +2,7 @@ from random import randint, random, gauss, shuffle
 from utils import *
 from math import ceil, fabs
 import matplotlib.pyplot as plt
+import audio
 
 class Item:
 
@@ -155,6 +156,19 @@ class Player:
     def __init__(self) -> None:
         self.items = []
         self.render_distance = 2
+        self.mine_armed = False
+        self.on_mine = False
+    
+    def step_on_mine(self, is_mine):
+        if is_mine:
+            audio.mine_armed()
+            self.mine_armed = True
+            self.on_mine = True
+        elif self.mine_armed:
+            self.on_mine = False
+    
+    def must_explode(self):
+        return self.mine_armed and not self.on_mine
     
     def show(self):
         print("\nItems:")

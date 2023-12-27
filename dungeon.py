@@ -3,6 +3,7 @@ from utils import debug, Dimensions, terminal_dimensions, Position, Vector
 from math import ceil, sqrt
 import sys
 from player import *
+import audio
 
 class Tile:
 
@@ -12,6 +13,7 @@ class Tile:
     EXIT = 4
     INTERNAL_WALL = 3
     ITEM = 5
+    MINE = 6
 
     FOG = ["░", "▒", "▓"]
 
@@ -54,6 +56,7 @@ class Room:
         self.remaining_doors = doors_to_achieve - (self.door_number - 1)
         debug(f"remaining doors: {self.remaining_doors}")
         self.wall_placement_rate = random()
+        self.mine_placement_rate = 0.05
         self.doors_to_achieve = doors_to_achieve
         self.child_rooms = {}
         self.parent_room = parent_room
@@ -142,9 +145,13 @@ class Room:
                 tile.resource = [item]
         for pos in placements: 
             tile: Tile = self.tiles[pos.y][pos.x]
-            if tile.id == Tile.EMPTY and random() < self.wall_placement_rate:
-                tile.id = Tile.INTERNAL_WALL
-                tile.char = "\033[90m#\033[0m"
+            if tile.id == Tile.EMPTY:
+                if random() < self.wall_placement_rate:
+                    tile.id = Tile.INTERNAL_WALL
+                    tile.char = "\033[90m#\033[0m"
+                elif random() < self.mine_placement_rate:
+                    tile.id = Tile.MINE
+                    tile.char = "\033[91;5m·\033[0m"
 
     
     def count_rooms(self):
@@ -197,6 +204,7 @@ class Dungeon:
         self.room_number = room_number
         self.difficulty = difficulty
         self.player = Player()
+        self.player.render_distance = 2
     
     def start(self):
         self.items = Item.dispatch(item_number=randint(15 + self.difficulty, 20 + self.difficulty), factor=self.difficulty**2)
@@ -217,6 +225,7 @@ class Dungeon:
         ticks = 0
         wait_ticks = -1
         last_command = ""
+        last_tile = None
         last_direction = "none"
         while self.running:
             self.current_room.show(self.player_position, self.player)
@@ -228,13 +237,17 @@ class Dungeon:
                 if len(command) == 0 and last_command in movements.keys(): command = last_command
                 if command in movements.keys():
                     last_direction = command
+                    last_tile = self.current_room.tiles[self.player_position.y][self.player_position.x]
                     new_player_position = self.player_position.translate(movements[command])
                     tile = self.current_room.tiles[new_player_position.y][new_player_position.x]
-                    if tile.id == Tile.EMPTY:
+                    if tile.id in [Tile.EMPTY, Tile.MINE]:
+                        audio.step()
                         tile.player_on = True
                         self.current_room.tiles[self.player_position.y][self.player_position.x].player_on = False
                         self.player_position = new_player_position
+                        self.player.step_on_mine(tile.id == Tile.MINE)
                     elif tile.id == Tile.DOOR:
+                        audio.through_door()
                         self.current_room.tiles[self.player_position.y][self.player_position.x].player_on = False
                         child_room_info: dict = self.current_room.child_rooms[new_player_position.to_tuple()]
                         child_room_info["room"].at_door_placement(self.player_position, child_room_info["door_pos"])
@@ -245,15 +258,24 @@ class Dungeon:
                         time.sleep(5)
                         sys.exit(0)
                     elif tile.id == Tile.ITEM:
+                        self.player.step_on_mine(False)
+                        audio.step()
+                        audio.collect_item()
                         self.player.items.extend(tile.resource)
                         tile.player_on = True
                         tile.id = Tile.EMPTY
                         tile.char = " "
                         self.current_room.tiles[self.player_position.y][self.player_position.x].player_on = False
                         self.player_position = new_player_position
+                    else:
+                        audio.block()
+                    if self.player.must_explode():
+                        audio.mine_explosion()
+                        time.sleep(3)
+                        sys.exit(0)
                 elif command == "break":
-                    if last_command in movements.keys():
-                        break_block_position = self.player_position.translate(movements[last_command])
+                    if last_direction != "none":
+                        break_block_position = self.player_position.translate(movements[last_direction])
                         tile = self.current_room.tiles[break_block_position.y][break_block_position.x]
                         if tile.id == Tile.INTERNAL_WALL:
                             wait_ticks = 3
@@ -267,10 +289,13 @@ class Dungeon:
                     last_command = command
             elif wait_ticks > 0:
                 print(f"\033[H(turn.{ticks})> [wait {wait_ticks}]")
+                if last_command == "break":
+                    audio.hit_block()
                 time.sleep(0.75)
                 wait_ticks -= 1
             elif wait_ticks == 0:
                 if last_command == "break":
+                    audio.broke_block()
                     break_block_position = self.player_position.translate(movements[last_direction])
                     tile = self.current_room.tiles[break_block_position.y][break_block_position.x]
                     if tile.id == Tile.INTERNAL_WALL:

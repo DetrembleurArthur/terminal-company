@@ -1,6 +1,7 @@
 from datetime import datetime
 from os import get_terminal_size
 
+
 import math
 
 def sigmoid(x):
