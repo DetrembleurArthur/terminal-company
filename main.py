@@ -1,5 +1,97 @@
+from dungeon import Dungeon
+from player import Player
+from commands import Commands
+from utils import Vector
+from tile import Tile
+import time
+import audio
+import sys
+from utils import terminal_dimensions
 
+class Game:
+
+    def __init__(self) -> None:
+        self.player = Player()
+        self.dungeon = Dungeon(self.player, room_number=50, difficulty=5)
+        self.dungeon.init()
+        self.player.render_distance = 1000
+        self.commands = Commands()
+        self.last_direction = ("up", Vector(0, -1))
+        self.wait_commands = []
+        self.init_commands()
+    
+    def init_commands(self):
+        self.commands["_default"] = lambda: self.commands.exec(self.last_direction[0])
+        self.commands["up"] = self.cmd_move_up
+        self.commands["down"] = self.cmd_move_down
+        self.commands["right"] = self.cmd_move_right
+        self.commands["left"] = self.cmd_move_left
+        self.commands["break"] = self.cmd_break
+        self.commands["start"] = self.cmd_start
+        self.commands["exit"] = self.cmd_exit
+        self.commands["inventory"] = self.cmd_inventory
+    
+    def cmd_move_up(self):
+        self.last_direction = ("up", Vector(0, -1))
+        new_position = self.player.position.translate(Vector(0, -1))
+        self.dungeon.move(new_position)
+    
+    def cmd_move_down(self):
+        self.last_direction = ("down", Vector(0, 1))
+        new_position = self.player.position.translate(Vector(0, 1))
+        self.dungeon.move(new_position)
+    
+    def cmd_move_right(self):
+        self.last_direction = ("right", Vector(1, 0))
+        new_position = self.player.position.translate(Vector(1, 0))
+        self.dungeon.move(new_position)
+    
+    def cmd_move_left(self):
+        self.last_direction = ("left", Vector(-1, 0))
+        new_position = self.player.position.translate(Vector(-1, 0))
+        self.dungeon.move(new_position)
+    
+    def wait(self, callback, tick_number=1):
+        self.wait_commands.extend([callback]*tick_number)
+
+    
+    def cmd_break(self):
+        if self.last_direction != None:
+            block_position = self.player.position.translate(self.last_direction[1])
+            if self.dungeon.is_breakable(block_position):
+                audio.prepare()
+                self.wait(audio.hit_block, 2)
+                self.wait(lambda: self.dungeon.break_block(block_position))
+
+    def cmd_start(self):
+        self.dungeon.init()
+
+    def cmd_exit(self):
+        print("\033c")
+        sys.exit(0)
+
+    def cmd_inventory(self):
+        print("\033c")
+        self.player.show()
+        input("(enter)> ")
+    
+    def loop(self):
+        self.dungeon.show()
+        audio.jingle()
+        self.running = True
+        self.ticks = 0
+        while self.running and self.player.hp > 0:
+            self.dungeon.show()
+            print(f"last direction {self.last_direction[0] if self.last_direction != None else 'none'}")
+            if len(self.wait_commands) > 0:
+                print(f"\033[H! {len(self.wait_commands) * '[■]'}")
+                time.sleep(0.60)
+                self.wait_commands.pop(0)()
+            else:
+                self.commands.exec(input(f"\033[H(turn.{self.ticks})> "))
+            self.ticks += 1
 
 
 if __name__ == "__main__":
-    pass
+    game = Game()
+    game.loop()

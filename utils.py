@@ -7,6 +7,9 @@ import math
 def sigmoid(x):
   return 1 / (1 + math.exp(-x))
 
+def dist(x1, x2, y1, y2):
+    return math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
+
 DEBUG = True
 
 def debug(text):

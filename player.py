@@ -3,6 +3,7 @@ from utils import *
 from math import ceil, fabs
 import matplotlib.pyplot as plt
 import audio
+from tile import Tile
 
 class Item:
 
@@ -154,10 +155,17 @@ class Item:
 class Player:
 
     def __init__(self) -> None:
+        self.char = Tile.Char.PLAYER
+        self.hp = 100
         self.items = []
+        self.equipments = []
         self.render_distance = 2
         self.mine_armed = False
         self.on_mine = False
+        self.position = Position(0, 0)
+    
+    def hit(self, dmg):
+        self.hp = max(0, self.hp - dmg)
     
     def step_on_mine(self, is_mine):
         if is_mine:
@@ -174,7 +182,7 @@ class Player:
         print("\nItems:")
         for item in self.items:
             print(item)
-        print(f"Total price: {sum(map(lambda item: item.price, self.items))}$")
+        print(f"Total price: {sum(map(lambda item: item.price, self.items)):.2f}$")
         print(f"Total weight: {sum(map(lambda item: item.weight, self.items))}Kg")
 
 if __name__ == "__main__":
