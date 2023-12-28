@@ -14,7 +14,7 @@ class Game:
         self.player = Player()
         self.dungeon = Dungeon(self.player, room_number=50, difficulty=5)
         self.dungeon.init()
-        self.player.render_distance = 1000
+        self.player.render_distance = 2
         self.commands = Commands()
         self.last_direction = ("up", Vector(0, -1))
         self.wait_commands = []

@@ -12,6 +12,7 @@ class Room:
         debug(f"doors to achieve: {doors_to_achieve}")
         self.wall_placement_rate = random() ** 2
         self.mine_placement_rate = 0.02
+        self.light_on = random() < 0.30
         self.content_generation = [
             (self.wall_placement_rate, Tile.as_internal_wall),
             (self.mine_placement_rate, Tile.as_mine)
@@ -147,7 +148,7 @@ class Room:
         x = term_dim.width // 2 - self.dimensions.width # car une case prend 2 caractères (la case + le vide)
         y = term_dim.height // 2 - self.dimensions.height // 2
         print("\033c")
-        print(f"Room {self.id}")
+        print(f"Room {self.id} (light {'on' if self.light_on else 'off'})")
         print(f"Items {len(self.items)}")
         print(f"Remain items {len(self.items) - len([item for item in player.items if item in self.items])}")
         i = 0
@@ -155,7 +156,10 @@ class Room:
             j = 0
             #print(f"\033[{i + y};{x-3}H{i}", end="")
             for col in row:
-                col.visible = dist(player.position.x, j//2, player.position.y, i) < player.render_distance
+                if self.light_on:
+                    col.visible = True
+                else:
+                    col.visible = dist(player.position.x, j//2, player.position.y, i) < player.render_distance
                 print(f"\033[{i + y};{j + x}H{col}", end="")
                 j += 2
             i += 1
