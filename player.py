@@ -178,6 +178,9 @@ class Player:
     def must_explode(self):
         return self.mine_armed and not self.on_mine
     
+    def get_weight(self):
+        return sum(map(lambda item: item.weight, self.items))
+    
     def show(self):
         print("\nItems:")
         for item in self.items:

@@ -21,6 +21,9 @@ def manage_path(path: str):
 def block():
     play_sound(manage_path("/res/audio/block.mp3"))
 
+def ghost_scream():
+    play_sound(manage_path("/res/audio/ghost_scream.mp3"))
+
 def hit_block():
     play_sound(manage_path("/res/audio/hit_block.mp3"))
 

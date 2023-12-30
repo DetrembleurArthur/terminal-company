@@ -46,16 +46,19 @@ class Dungeon:
         if tile.id == Tile.EMPTY:
             audio.step()
             self.entity_move_on(tile, self.player, new_position)
+            return True
         elif tile.id == Tile.MINE:
             audio.step()
             self.entity_move_on(tile, self.player, new_position)
             audio.mine_armed()
+            return True
         elif tile.id == Tile.DOOR:
             audio.through_door()
             self.current_tile.override_off()
             child_room_info: dict = self.current_room.child_rooms[new_position.to_tuple()]
             self.current_tile = child_room_info["room"].at_door_placement(self.player.position, child_room_info["door_pos"])
             self.current_room = child_room_info["room"]
+            return True
         elif tile.id == Tile.EXIT:
             print("\033cYour inventory")
             self.player.show()
@@ -65,8 +68,9 @@ class Dungeon:
             audio.collect_item()
             self.player.items.extend(tile.resource)
             self.entity_move_on(tile, self.player, new_position)
-        else:
-            audio.block()
+            return True
+        audio.block()
+        return False
     
     def is_breakable(self, block_position: Position):
         tile = self.current_room.tile_at(block_position)

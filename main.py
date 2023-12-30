@@ -22,14 +22,22 @@ class Game:
     
     def init_commands(self):
         self.commands["_default"] = lambda: self.commands.exec(self.last_direction[0])
-        self.commands["up"] = self.cmd_move_up
-        self.commands["down"] = self.cmd_move_down
-        self.commands["right"] = self.cmd_move_right
-        self.commands["left"] = self.cmd_move_left
+        self.commands["up"] = lambda: self.weight_slowness(self.cmd_move_up)
+        self.commands["down"] = lambda: self.weight_slowness(self.cmd_move_down)
+        self.commands["right"] = lambda: self.weight_slowness(self.cmd_move_right)
+        self.commands["left"] = lambda: self.weight_slowness(self.cmd_move_left)
         self.commands["break"] = self.cmd_break
         self.commands["start"] = self.cmd_start
         self.commands["exit"] = self.cmd_exit
         self.commands["inventory"] = self.cmd_inventory
+    
+    def weight_slowness(self, move_func):
+        weight = self.player.get_weight()
+        if weight >= 15:
+            self.wait(lambda: audio.step(), weight // 30)
+            self.wait(move_func)
+        else:
+            move_func()
     
     def cmd_move_up(self):
         self.last_direction = ("up", Vector(0, -1))
@@ -84,7 +92,7 @@ class Game:
             self.dungeon.show()
             print(f"last direction {self.last_direction[0] if self.last_direction != None else 'none'}")
             if len(self.wait_commands) > 0:
-                print(f"\033[H! {len(self.wait_commands) * '[■]'}")
+                print(f"\033[H! {len(self.wait_commands) * '■'}")
                 time.sleep(0.60)
                 self.wait_commands.pop(0)()
             else:
