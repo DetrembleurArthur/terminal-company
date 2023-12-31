@@ -1,19 +1,18 @@
 from dungeon import Dungeon
 from player import Player
 from commands import Commands
-from utils import Vector
 from tile import Tile
+from utils import Vector
 import time
 import audio
 import sys
-from utils import terminal_dimensions
 
 class Game:
 
     def __init__(self) -> None:
         self.player = Player()
         self.dungeon = Dungeon(self.player, room_number=50, difficulty=5)
-        self.dungeon.init()
+        self.dungeon.init(self.player.char)
         self.player.render_distance = 2
         self.commands = Commands()
         self.last_direction = ("up", Vector(0, -1))
@@ -41,23 +40,27 @@ class Game:
     
     def cmd_move_up(self):
         self.last_direction = ("up", Vector(0, -1))
+        self.player.char = Tile.Char.PLAYER_UP
         new_position = self.player.position.translate(Vector(0, -1))
-        self.dungeon.move(new_position)
+        self.dungeon.move_player(new_position)
     
     def cmd_move_down(self):
         self.last_direction = ("down", Vector(0, 1))
+        self.player.char = Tile.Char.PLAYER_DOWN
         new_position = self.player.position.translate(Vector(0, 1))
-        self.dungeon.move(new_position)
+        self.dungeon.move_player(new_position)
     
     def cmd_move_right(self):
         self.last_direction = ("right", Vector(1, 0))
+        self.player.char = Tile.Char.PLAYER_RIGHT
         new_position = self.player.position.translate(Vector(1, 0))
-        self.dungeon.move(new_position)
+        self.dungeon.move_player(new_position)
     
     def cmd_move_left(self):
         self.last_direction = ("left", Vector(-1, 0))
+        self.player.char = Tile.Char.PLAYER_LEFT
         new_position = self.player.position.translate(Vector(-1, 0))
-        self.dungeon.move(new_position)
+        self.dungeon.move_player(new_position)
     
     def wait(self, callback, tick_number=1):
         self.wait_commands.extend([callback]*tick_number)
@@ -72,7 +75,7 @@ class Game:
                 self.wait(lambda: self.dungeon.break_block(block_position))
 
     def cmd_start(self):
-        self.dungeon.init()
+        self.dungeon.init(self.player.char)
 
     def cmd_exit(self):
         print("\033c")

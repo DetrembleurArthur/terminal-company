@@ -27,13 +27,33 @@ class Tile:
         H_WALL = "\033[90m═\033[0m"
         V_WALL = "\033[90m║\033[0m"
 
-        ITEMS = "\033[93m■\033[0m"
-        ITEM = "\033[93m·\033[0m"
+        ITEMS = "\033[93m✦\033[0m"
+        ITEM = "\033[93m✧\033[0m"
 
-        INTERNAL_WALL = "\033[90m#\033[0m"
+        INTERNAL_WALLS = {
+            "0000" : "\033[90m#\033[0m",
+            "0001" : "\033[90m┃\033[0m",
+            "0010" : "\033[90m━\033[0m",
+            "0011" : "\033[90m┏\033[0m",
+            "0100" : "\033[90m━\033[0m",
+            "0101" : "\033[90m┓\033[0m",
+            "0110" : "\033[90m━\033[0m",
+            "0111" : "\033[90m┳\033[0m",
+            "1000" : "\033[90m┃\033[0m",
+            "1001" : "\033[90m┃\033[0m",
+            "1010" : "\033[90m┗\033[0m",
+            "1011" : "\033[90m┣\033[0m",
+            "1100" : "\033[90m┛\033[0m",
+            "1101" : "\033[90m┫\033[0m",
+            "1110" : "\033[90m┻\033[0m",
+            "1111" : "\033[90m╋\033[0m",
+        }
         MINE = "\033[91;5m·\033[0m"
 
-        PLAYER = "\033[98m×\033[0m"
+        PLAYER_UP = "\033[98m⮝\033[0m"
+        PLAYER_DOWN = "\033[98m⮟\033[0m"
+        PLAYER_RIGHT = "\033[98m⮞\033[0m"
+        PLAYER_LEFT = "\033[98m⮜\033[0m"
 
     def __init__(self, id=0) -> None:
         self.id = id
@@ -66,7 +86,14 @@ class Tile:
     
     def as_internal_wall(self):
         self.id = Tile.INTERNAL_WALL
-        self.char = Tile.Char.INTERNAL_WALL
+    
+    def adapt_internal_walls(self, tiles, pos):
+        if self.id == Tile.INTERNAL_WALL:
+            pattern = f"{int(tiles[pos.y - 1][pos.x].id == Tile.INTERNAL_WALL)}"
+            pattern += f"{int(tiles[pos.y][pos.x - 1].id == Tile.INTERNAL_WALL)}"
+            pattern += f"{int(tiles[pos.y][pos.x + 1].id == Tile.INTERNAL_WALL)}"
+            pattern += f"{int(tiles[pos.y + 1][pos.x].id == Tile.INTERNAL_WALL)}"
+            self.char = Tile.Char.INTERNAL_WALLS[pattern]
     
     def as_mine(self):
         self.id = Tile.MINE
@@ -92,9 +119,7 @@ class Tile:
     def override_off(self, clear=False):
         self.entity_on = None
         if clear:
-            self.char = " "
-            self.id = Tile.EMPTY
-            self.resource = None
+            self.as_empty()
     
     def __repr__(self) -> str:
         if self.visible:

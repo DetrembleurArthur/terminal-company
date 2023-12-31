@@ -1,6 +1,6 @@
 from random import randint, random, shuffle
 from utils import debug, Dimensions, terminal_dimensions, Position, Vector
-from math import ceil, sqrt
+from math import ceil
 from player import *
 from tile import Tile
 
@@ -10,12 +10,12 @@ class Room:
 
     def __init__(self, doors_to_achieve, depth, items_pool, previous_door_position=None, parent_room=None) -> None:
         debug(f"doors to achieve: {doors_to_achieve}")
-        self.wall_placement_rate = random() ** 2
+        self.wall_placement_rate = min(random(), 0.80) ** 2
         self.mine_placement_rate = 0.02
         self.light_on = random() < 0.30
         self.content_generation = [
-            (self.wall_placement_rate, Tile.as_internal_wall),
-            (self.mine_placement_rate, Tile.as_mine)
+            (self.wall_placement_rate, Tile.as_internal_wall, Tile.adapt_internal_walls),
+            (self.mine_placement_rate, Tile.as_mine, None)
         ]
         self.items_pool: list = items_pool
         self.items = self.items_pool.pop()
@@ -123,6 +123,11 @@ class Room:
             for generator in self.content_generation:
                 if random() < generator[0]:
                     generator[1](tile)
+        for pos in placements: 
+            tile: Tile = self.tiles[pos.y][pos.x]
+            for generator in self.content_generation:
+                if generator[2] != None:
+                    generator[2](tile,self.tiles, pos)
         placements = [place for place in placements if self.tiles[place.y][place.x].id == Tile.EMPTY]
     
     def count_rooms(self):
@@ -132,7 +137,7 @@ class Room:
                 counter += room.count_rooms()
         return counter
     
-    def at_door_placement(self, player_position, door_pos):
+    def at_door_placement(self, player_position, door_pos, entity_char):
         pos = door_pos if type(door_pos) == Position else Position(door_pos[0], door_pos[1])
         if pos.x == 0: player_position.x = pos.x + 1
         elif pos.x == self.dimensions.width - 1: player_position.x = self.dimensions.width - 2
@@ -140,7 +145,7 @@ class Room:
         if pos.y == 0: player_position.y = pos.y + 1
         elif pos.y == self.dimensions.height - 1: player_position.y = self.dimensions.height - 2
         else: player_position.y = pos.y
-        self.tiles[player_position.y][player_position.x].override_by(Tile.Char.PLAYER)
+        self.tiles[player_position.y][player_position.x].override_by(entity_char)
         return self.tiles[player_position.y][player_position.x]
     
     def show(self, player):

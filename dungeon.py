@@ -1,4 +1,5 @@
 from random import randint
+from item import Item
 from utils import Position, Vector
 from math import sqrt
 import sys
@@ -6,7 +7,6 @@ from player import *
 import audio
 from tile import Tile
 from room import Room
-from commands import Commands
 
 
 class Dungeon:
@@ -17,12 +17,12 @@ class Dungeon:
         self.current_tile: Tile = None
         self.player: Player = player
     
-    def init(self):
+    def init(self, player_char):
         self.items = Item.dispatch(item_number=randint(15 + self.difficulty, 20 + self.difficulty), factor=self.difficulty**2)
         self.items_pool = Item.split_items(self.items, self.room_number, sqrt(1/self.room_number))
         self.main_room = Room(doors_to_achieve=self.room_number - 1, depth=0, items_pool=self.items_pool)
         self.current_room = self.main_room
-        self.current_tile = self.current_room.at_door_placement(self.player.position, self.current_room.main_exit_position)
+        self.current_tile = self.current_room.at_door_placement(self.player.position, self.current_room.main_exit_position, player_char)
     
     def show(self):
         self.current_room.show(self.player)
@@ -41,7 +41,7 @@ class Dungeon:
             self.current_tile.as_empty()
         self.current_tile = tile
     
-    def move(self, new_position: Vector):
+    def move_player(self, new_position: Vector):
         tile: Tile = self.current_room.tiles[new_position.y][new_position.x]
         if tile.id == Tile.EMPTY:
             audio.step()
@@ -56,7 +56,7 @@ class Dungeon:
             audio.through_door()
             self.current_tile.override_off()
             child_room_info: dict = self.current_room.child_rooms[new_position.to_tuple()]
-            self.current_tile = child_room_info["room"].at_door_placement(self.player.position, child_room_info["door_pos"])
+            self.current_tile = child_room_info["room"].at_door_placement(self.player.position, child_room_info["door_pos"], self.player.char)
             self.current_room = child_room_info["room"]
             return True
         elif tile.id == Tile.EXIT:
@@ -69,6 +69,7 @@ class Dungeon:
             self.player.items.extend(tile.resource)
             self.entity_move_on(tile, self.player, new_position)
             return True
+        self.current_room.tiles[self.player.position.y][self.player.position.x].override_by(self.player.char)
         audio.block()
         return False
     
